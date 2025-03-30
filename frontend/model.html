@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- D3.js Library -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- TopoJSON for map data processing -->
+    <script src="https://unpkg.com/topojson@3"></script>
+    <title>EcoPrint - Carbon Model (Conceptual Integration)</title> <!-- Updated Title -->
+    <style>
+        /* --- Styles remain identical to previous version --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background-color: #282c34; color: #ffffff; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: rgba(40, 44, 52, 0.8); border-bottom: 1px solid #444; margin-bottom: 20px;}
+        .logo { font-size: 1.8em; font-weight: bold; color: #98c379; text-decoration: none; }
+        nav a { color: #abb2bf; text-decoration: none; margin-left: 25px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s ease; }
+        nav a:hover, nav a.active { color: #ffffff; }
+        h1, h2 { color: #98c379; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px; text-align: center; }
+        h1 { font-size: 2.5em; }
+        h2 { font-size: 1.5em; border-bottom: 1px solid #555; padding-bottom: 10px; margin-top: 30px; }
+        /* Controls and Status */
+        .controls { text-align: center; margin-bottom: 30px; }
+        .controls button { padding: 12px 25px; background-color: #98c379; color: #282c34; border: none; border-radius: 4px; font-size: 1.1em; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: background-color 0.3s ease; }
+        .controls button:hover { background-color: #b3e6a4; }
+        .controls button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        #model-status { text-align: center; margin: 20px 0; font-style: italic; color: #abb2bf; min-height: 1.5em; }
+        #model-status.error { color: #e06c75; font-weight: bold;}
+        /* Map Container */
+        #map-container { width: 100%; max-width: 900px; height: 550px; margin: 0 auto; border: 1px solid #444; background-color: #31353f; position: relative; border-radius: 5px; overflow: hidden; }
+        #map-container svg { display: block; width: 100%; height: 100%; }
+        /* Map Styling */
+        .country { stroke: #282c34; stroke-width: 0.5px; transition: fill 0.3s ease; }
+        .country:hover { stroke: #ffffff; stroke-width: 1.5px; cursor: pointer; }
+        .graticule { fill: none; stroke: #555; stroke-width: 0.5px; stroke-dasharray: 2,2; }
+        .sphere { fill: none; stroke: #777; stroke-width: 1px; }
+        /* Tooltip Styling */
+        #tooltip { position: absolute; background-color: rgba(0, 0, 0, 0.8); color: white; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; pointer-events: none; opacity: 0; transition: opacity 0.2s ease-out; white-space: nowrap; z-index: 10; }
+        #tooltip.visible { opacity: 1; }
+        /* Legend Styling */
+        #legend-container { text-align: center; margin-top: 20px; }
+        #legend-container svg { display: inline-block; max-width: 90%; }
+        .legend-label { font-size: 0.9em; fill: #abb2bf; }
+        .legend-axis .tick line { stroke: #777; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="#" class="logo">EcoPrint</a>
+        <nav>
+             <a href="dashboard.html">Dashboard</a>
+             <a href="marketplace.html">Marketplace</a>
+             <a href="model.html" class="active">Impact</a> <!-- Updated active link -->
+        </nav>
+    </header>
+
+    <div class="container">
+        <main>
+            <h1>Carbon Credit Flow Prediction (Conceptual Demo)</h1> <!-- Updated H1 -->
+            <div class="controls">
+                <button id="predict-button">Generate Predicted Heatmap</button>
+            </div>
+            <div id="model-status">Click button to generate conceptual prediction.</div>
+            <div id="map-container">
+                 <div style="text-align:center; padding-top: 50px; color: #abb2bf;">Map Area</div>
+            </div>
+             <div id="legend-container"></div>
+        </main>
+    </div>
+
+    <footer></footer>
+
+    <script>
+        // --- NOTE ---
+        // This script simulates the frontend workflow.
+        // AutoSDK and Google GenAI calls CANNOT run securely or practically directly in the browser.
+        // The conceptual snippets below show where backend integration would occur.
+        // The map rendering uses **simulated** data.
+        // --- /NOTE ---
+
+        // --- Constants ---
+        const PREDICTION_SCALE_RANGE = [-1, 1];
+        const MAP_DATA_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+        const MISSING_DATA_COLOR = "#555b68";
+        const LEGEND_WIDTH = 500;
+
+        // --- Element Getters ---
+        const predictButton = document.getElementById('predict-button');
+        const statusDiv = document.getElementById('model-status');
+        const mapContainer = document.getElementById('map-container');
+        const legendContainer = document.getElementById('legend-container');
+
+        const tooltip = d3.select("body").append("div")
+            .attr("id", "tooltip")
+            .style("opacity", 0);
+
+        let worldMapData = null; // Store loaded map data
+
+        // --- Simulation & Conceptual Functions ---
+
+        // Simulate fetching data summary - with conceptual AutoSDK snippet
+        async function fetchDataSummary() {
+            statusDiv.textContent = 'Fetching data summary (conceptual)...';
+
+            // ------------------------------------------------------------------
+            // CONCEPTUAL AutoSDK Snippet (Requires Backend / Node.js)
+            // ------------------------------------------------------------------
+            /*
+            // This code would run on a backend server, not in the browser.
+            import { AutoConsensus, AutoUtils } from '@autonomys/auto-sdk'; // Hypothetical imports
+
+            // Initialize SDK components (likely needs RPC endpoint config)
+            const consensus = new AutoConsensus({ network: 'autonomys-testnet' }); // Example setup
+            const utils = new AutoUtils();
+
+            async function getAndProcessBlockchainData() {
+                try {
+                    console.log("Backend: Fetching recent blocks via AutoSDK...");
+                    const recentBlocks = await consensus.getBlocks({ limit: 1000 }); // Fetch last 1000 blocks (example)
+
+                    console.log(`Backend: Processing ${recentBlocks.length} blocks...`);
+                    let relevantTransactions = [];
+                    for (const block of recentBlocks) {
+                        // Filter for specific transactions (e.g., related to Carbon contracts/assets)
+                        const carbonTxs = block.transactions.filter(tx => {
+                            // Example filter logic (needs actual implementation based on your contracts)
+                            // return tx.to === CARBON_CONTRACT_ADDRESS || utils.decodeData(tx.data)?.type === 'CARBON_TRANSFER';
+                            return true; // Placeholder: process all for now
+                        });
+                        relevantTransactions.push(...carbonTxs);
+                    }
+
+                    console.log(`Backend: Found ${relevantTransactions.length} relevant transactions.`);
+
+                    // --- Feature Engineering ---
+                    // Aggregate data, calculate flows, potentially identify entities if possible
+                    // This step is crucial and complex - how do you map on-chain tx to real-world flow?
+                    // Example: Sum net flow if senders/receivers can be mapped to regions (very hard)
+                    const processedData = {
+                         txCount: relevantTransactions.length,
+                         totalVolume: relevantTransactions.reduce((sum, tx) => sum + (tx.value || 0), 0),
+                         // ... more aggregated features needed for GenAI ...
+                         // e.g., flows between known addresses, temporal patterns
+                    };
+
+                    console.log("Backend: Data processing complete.");
+                    return processedData;
+
+                } catch (error) {
+                    console.error("Backend AutoSDK Error:", error);
+                    return null;
+                }
+            }
+
+            // On the backend, you would call:
+            // const processedData = await getAndProcessBlockchainData();
+            // And then pass `processedData` to the GenAI prediction function.
+
+            // For frontend simulation, just return a placeholder:
+            */
+            // ------------------------------------------------------------------
+            // END CONCEPTUAL AutoSDK Snippet
+            // ------------------------------------------------------------------
+
+            await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+            console.log("Conceptual data fetch step complete.");
+            // Return placeholder data structure expected by next step (even if empty)
+            return { summary: "Conceptual summary based on blockchain data", txCount: 150, totalVolume: 12345 };
+        }
+
+        // Simulate AI prediction - with conceptual Google GenAI snippet
+        async function runAIPrediction(processedData, mapFeatures) {
+            statusDiv.textContent = 'Running AI prediction model (conceptual)...';
+
+            // ------------------------------------------------------------------
+            // CONCEPTUAL Google GenAI Snippet (Requires Backend / Node.js)
+            // ------------------------------------------------------------------
+            /*
+            // This code would run on a backend server, not in the browser.
+            // Assumes secure setup with API Keys/Credentials via environment variables.
+            import { VertexAI } from '@google-cloud/vertexai'; // Example Google library
+
+            // Initialize Vertex AI
+            const vertex_ai = new VertexAI({project: 'your-gcp-project-id', location: 'us-central1'});
+            const generativeModel = vertex_ai.preview.getGenerativeModel({
+                 model: 'gemini-pro', // Or your specific model
+            });
+
+            async function getGeoPrediction(inputFeatures) {
+                console.log("Backend: Preparing prompt for Google GenAI...");
+                // --- Create Prompt ---
+                // This needs careful design based on your 'inputFeatures' and desired output.
+                // Ask the model to predict net carbon credit flow (-1 to 1) for countries,
+                // given the transaction summary. You might need to provide country context.
+                const prompt = `
+                    Analyze the following blockchain transaction summary data related to carbon credits:
+                    Transaction Count: ${inputFeatures.txCount}
+                    Total Volume: ${inputFeatures.totalVolume}
+                    [... Include other relevant aggregated features ...]
+
+                    Based ONLY on this data, predict the likely net flow of carbon credits for the following countries.
+                    Assign a score between -1 (strong net outflow/selling) and 1 (strong net inflow/buying) for each.
+                    Provide the output as a JSON object where keys are country ISO 3166-1 numeric codes and values are the predicted scores.
+                    Example Format: { "840": 0.6, "156": -0.3, "076": 0.1, ... }
+
+                    List of country codes to predict for: ${mapFeatures.map(f => f.id).filter(id => id).join(', ')}
+
+                    If the data is insufficient to make a prediction for a country, assign a score of 0.
+                    Be concise and provide only the JSON object.
+                `;
+
+                 try {
+                     console.log("Backend: Calling Google GenAI API...");
+                     const resp = await generativeModel.generateContent(prompt);
+                     const responseText = resp.response.candidates[0].content.parts[0].text;
+
+                     console.log("Backend: Received prediction text:", responseText);
+
+                     // --- Parse the Response ---
+                     // Extract and parse the JSON object from the response text.
+                     // Add error handling for parsing failures.
+                     let predictionJson = {};
+                     try {
+                          // Attempt to find JSON block (might need more robust parsing)
+                          const jsonMatch = responseText.match(/\{.*\}/s);
+                          if (jsonMatch) {
+                               predictionJson = JSON.parse(jsonMatch[0]);
+                          } else {
+                               console.error("Backend: Could not find JSON in GenAI response.");
+                          }
+                     } catch (parseError) {
+                          console.error("Backend: Failed to parse GenAI JSON response:", parseError);
+                     }
+                     return predictionJson; // Return the parsed JSON object (e.g., { "840": 0.5, ... })
+
+                 } catch (error) {
+                     console.error("Backend Google GenAI Error:", error);
+                     return {}; // Return empty object on error
+                 }
+            }
+
+            // On the backend, you would call:
+            // const predictionResult = await getGeoPrediction(processedData);
+            // And send `predictionResult` back to the frontend.
+
+            // For frontend simulation, generate fake data keyed by numeric ID:
+            */
+            // ------------------------------------------------------------------
+            // END CONCEPTUAL Google GenAI Snippet
+            // ------------------------------------------------------------------
+
+            await new Promise(resolve => setTimeout(resolve, 800)); // Simulate AI processing time
+
+            // --- Generate FAKE data for frontend SIMULATION ---
+            const fakePrediction = {};
+            mapFeatures.forEach(feature => {
+                 const numericId = feature.id;
+                 if (numericId !== undefined && numericId !== null) {
+                     fakePrediction[numericId] = (Math.random() * 2 - 1);
+                 }
+            });
+             // Override specific countries
+            if(fakePrediction[840]) fakePrediction[840] = Math.random() * 0.6 + 0.2;
+            if(fakePrediction[156]) fakePrediction[156] = Math.random() * -0.6 - 0.2;
+            if(fakePrediction[076]) fakePrediction[076] = Math.random() * 0.4;
+            if(fakePrediction[356]) fakePrediction[356] = Math.random() * 0.5 - 0.2;
+            if(fakePrediction[276]) fakePrediction[276] = Math.random() * 0.7 + 0.3;
+            if(fakePrediction[643]) fakePrediction[643] = Math.random() * -0.5;
+            if(fakePrediction[036]) fakePrediction[036] = Math.random() * 0.5 + 0.1;
+
+            console.log("Simulated Prediction (keyed by numeric ID):", Object.keys(fakePrediction).length);
+            statusDiv.textContent = 'Prediction generated (simulated). Rendering map...';
+            return fakePrediction; // Return fake data for map rendering
+        }
+
+        // --- D3 Rendering Functions ---
+        async function renderWorldMap(predictionData) {
+             // (This function remains largely the same as the previous working version)
+             mapContainer.innerHTML = ''; legendContainer.innerHTML = '';
+             try {
+                 if (!worldMapData) throw new Error("Map data not available.");
+                 const countries = topojson.feature(worldMapData, worldMapData.objects.countries);
+                 const width = mapContainer.clientWidth; const height = mapContainer.clientHeight > 0 ? mapContainer.clientHeight : 500;
+                 const projection = d3.geoMercator().fitSize([width, height], countries);
+                 const pathGenerator = d3.geoPath().projection(projection);
+                 const colorScale = d3.scaleSequential(d3.interpolateRdYlGn).domain(PREDICTION_SCALE_RANGE);
+                 const svg = d3.select(mapContainer).append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
+
+                 svg.append("path").datum(d3.geoGraticule10()).attr("class", "graticule").attr("d", pathGenerator);
+
+                 svg.append("g").selectAll(".country").data(countries.features).join("path")
+                    .attr("class", "country")
+                    .attr("d", pathGenerator)
+                    .attr("fill", d => {
+                         const numericId = d.id; const value = predictionData[numericId];
+                         return (value !== undefined && value !== null) ? colorScale(value) : MISSING_DATA_COLOR;
+                    })
+                    .on("mouseover", function(event, d) { /* ... tooltip logic ... */
+                         const numericId = d.id; const countryName = d.properties.name;
+                         const value = predictionData[numericId];
+                         const displayValue = (value !== undefined && value !== null) ? value.toFixed(3) : "N/A";
+                         tooltip.html(`<strong>${countryName || `ID: ${numericId}`}</strong><br>Predicted Flow: ${displayValue}`)
+                            .style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px");
+                         tooltip.transition().duration(100).style("opacity", 1);
+                         d3.select(this).raise().style("stroke-width", "1.5px").style("stroke", "#fff");
+                    })
+                    .on("mousemove", (event) => { tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px"); })
+                    .on("mouseout", function() { tooltip.transition().duration(200).style("opacity", 0); d3.select(this).style("stroke-width", null).style("stroke", null); });
+
+                 svg.append("path").datum({type: "Sphere"}).attr("class", "sphere").attr("d", pathGenerator);
+                 renderLegend(colorScale);
+                 statusDiv.textContent = 'Prediction heatmap rendered.';
+                 console.log("Map rendering complete.");
+             } catch (error) { /* ... error handling ... */
+                 console.error("Error rendering map:", error);
+                 statusDiv.textContent = `Error rendering map: ${error.message || 'Unknown error'}`; statusDiv.classList.add('error');
+                 mapContainer.innerHTML = `<div style='color:#e06c75; text-align:center; padding: 20px;'>Failed to render map. Check console.</div>`;
+             }
+        }
+
+        function renderLegend(colorScale) {
+            // (This function remains the same as the previous working version)
+            const legendWidth = LEGEND_WIDTH, legendHeight = 25, margin = {top: 5, right: 20, bottom: 30, left: 20};
+             legendContainer.innerHTML = '';
+             const legendSvg = d3.select("#legend-container").append("svg").attr("width", legendWidth).attr("height", legendHeight + margin.top + margin.bottom);
+             const defs = legendSvg.append("defs"); const linearGradient = defs.append("linearGradient").attr("id", "gradient-legend");
+             const numStops = 10; const range = colorScale.domain(); const stopPoints = d3.range(numStops + 1).map(i => range[0] + i * (range[1] - range[0]) / numStops);
+             linearGradient.selectAll("stop").data(stopPoints).join("stop").attr("offset", (d, i) => `${(i / numStops) * 100}%`).attr("stop-color", d => colorScale(d));
+             legendSvg.append("rect").attr("x", margin.left).attr("y", margin.top).attr("width", legendWidth - margin.left - margin.right).attr("height", legendHeight).style("fill", "url(#gradient-legend)");
+             const legendScale = d3.scaleLinear().domain(colorScale.domain()).range([margin.left, legendWidth - margin.right]);
+             const legendAxis = d3.axisBottom(legendScale).ticks(5).tickSize(6).tickFormat(d3.format(".1f"));
+             legendSvg.append("g").attr("class", "legend-axis").attr("transform", `translate(0, ${margin.top + legendHeight})`).call(legendAxis).call(g => g.select(".domain").remove()).selectAll("text").attr("class", "legend-label").attr("dy", "0.8em");
+             legendSvg.append("text").attr("class", "legend-label").attr("x", margin.left).attr("y", legendHeight + margin.top + margin.bottom - 8).text("Negative Flow (-1.0)").style("text-anchor", "start");
+             legendSvg.append("text").attr("class", "legend-label").attr("x", legendWidth - margin.right).attr("y", legendHeight + margin.top + margin.bottom - 8).text("Positive Flow (+1.0)").style("text-anchor", "end");
+             console.log("Legend rendered.");
+        }
+
+        // --- Event Listeners ---
+        predictButton.addEventListener('click', async () => {
+            predictButton.disabled = true;
+            statusDiv.textContent = 'Starting conceptual prediction process...'; // Updated text
+            statusDiv.classList.remove('error');
+            mapContainer.innerHTML = `<div style="text-align:center; padding-top: 50px; color: #abb2bf;">Generating...</div>`;
+
+            try {
+                 // 1. Conceptual Data Fetch (Simulated Result)
+                 const summaryData = await fetchDataSummary();
+                 if (!summaryData) throw new Error("Conceptual data fetch failed.");
+
+                 // 2. Ensure Map Data is Loaded (needed for AI input context and rendering)
+                 if (!worldMapData) {
+                     statusDiv.textContent = 'Loading map data...';
+                     worldMapData = await d3.json(MAP_DATA_URL);
+                     if (!worldMapData) throw new Error("Failed to load map data.");
+                 }
+                 const mapFeatures = topojson.feature(worldMapData, worldMapData.objects.countries).features;
+
+                 // 3. Conceptual AI Prediction (Simulated Result)
+                 // Pass BOTH summary data and map features conceptually to the AI step
+                 const prediction = await runAIPrediction(summaryData, mapFeatures);
+                 if (!prediction) throw new Error("Conceptual AI prediction failed.");
+
+                 // 4. Render the Map using the SIMULATED prediction data
+                 await renderWorldMap(prediction);
+
+            } catch (error) {
+                console.error("Conceptual pipeline error:", error);
+                statusDiv.textContent = `Error: ${error.message || 'Unknown simulation error'}`;
+                statusDiv.classList.add('error');
+                mapContainer.innerHTML = `<div style='color:#e06c75; text-align:center; padding: 20px;'>Simulation Error. Check console.</div>`;
+            } finally {
+                predictButton.disabled = false;
+            }
+        });
+
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', async () => {
+             statusDiv.textContent = 'Ready. Loading map data in background...';
+             mapContainer.innerHTML = `<div style="text-align:center; padding-top: 50px; color: #abb2bf;">Click button above to generate map.</div>`;
+             try {
+                 worldMapData = await d3.json(MAP_DATA_URL);
+                 if (!worldMapData) throw new Error("Invalid map data format.");
+                 statusDiv.textContent = 'Map data loaded. Ready to generate conceptual prediction.';
+                 console.log("Map data pre-loaded successfully.");
+             } catch (error) {
+                  console.error("Failed to preload map data:", error);
+                  statusDiv.textContent = 'Error loading map data. Map generation might fail.';
+                  statusDiv.classList.add('error');
+             }
+        });
+
+    </script>
+
+</body>
+</html>
