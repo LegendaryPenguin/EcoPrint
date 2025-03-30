@@ -1,3 +1,3 @@
 # EcoPrint
 
-Carbon credit exchange with custom carbon token blockchain, trading, futures, options, Company carbon impact.
+![image](https://github.com/user-attachments/assets/ddc45a83-44bf-431f-882c-8ed1da0d129b)
