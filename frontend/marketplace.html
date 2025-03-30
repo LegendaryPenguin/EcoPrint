@@ -1,11 +1,482 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>EcoPrint - Marketplace</title>
+    <style>
+        /* --- Styles remain identical to previous version --- */
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background-color: #282c34; color: #ffffff; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        /* Header/Nav */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: rgba(40, 44, 52, 0.8); border-bottom: 1px solid #444; }
+        .logo { font-size: 1.8em; font-weight: bold; color: #98c379; text-decoration: none; }
+        nav a { color: #abb2bf; text-decoration: none; margin-left: 25px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s ease; }
+        nav a:hover, nav a.active { color: #ffffff; }
+        /* Main Content Area */
+        main { padding: 30px 0; }
+        h1, h2 { color: #98c379; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px; }
+        h1 { font-size: 2.5em; text-align: center; }
+        h2 { font-size: 1.5em; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        /* Wallet Selection REMOVED */
+        /* Tabs */
+        .tab-container { margin-bottom: 30px; border-bottom: 1px solid #555; display: flex; }
+        .tab-button { padding: 10px 20px; cursor: pointer; background-color: transparent; border: none; border-bottom: 3px solid transparent; color: #abb2bf; font-size: 1em; margin-right: 5px; transition: all 0.3s ease; }
+        .tab-button:hover { color: #ffffff; }
+        .tab-button.active { color: #ffffff; border-bottom-color: #98c379; }
+        .tab-content { display: none; padding: 20px; border: 1px solid #444; border-top: none; background-color: #31353f; border-radius: 0 0 5px 5px; }
+        .tab-content.active { display: block; }
+        /* Layouts */
+        .marketplace-layout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; } /* Spot market layout */
+        .order-book-column, .order-form-column, .derivatives-display-column { background-color: #31353f; padding: 20px; border-radius: 5px; border: 1px solid #444; } /* General column style */
+        .order-book-column h3, .derivatives-display-column h3 { text-align: center; margin-bottom: 15px; color: #abb2bf; } /* Column headers */
+        /* Order Book List */
+        .order-book-list { list-style: none; height: 400px; overflow-y: auto; font-size: 0.9em; }
+        .order-book-list::-webkit-scrollbar { width: 8px; } .order-book-list::-webkit-scrollbar-track { background: #444; border-radius: 4px;} .order-book-list::-webkit-scrollbar-thumb { background: #777; border-radius: 4px;} .order-book-list::-webkit-scrollbar-thumb:hover { background: #999; }
+        .order-book-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #555; } .order-book-list li:last-child { border-bottom: none; }
+        .order-book-list li.user-order { background-color: #4a4f5b; font-weight: bold; border-left: 3px solid #61afef; padding-left: 5px;} /* Style user's temporary order */
+        .order-book-list .price { font-weight: bold; } .order-book-list .amount { color: #abb2bf; }
+        .order-book-list .buy .price { color: #98c379; } .order-book-list .sell .price { color: #e06c75; }
+        /* Order Form */
+        .order-form label, .derivative-details label { display: block; margin-bottom: 5px; color: #abb2bf; font-size: 0.9em; }
+        .order-form input[type="number"], .order-form select { width: 100%; padding: 10px; margin-bottom: 15px; background-color: #444; border: 1px solid #555; border-radius: 4px; color: #ffffff; font-size: 1em; }
+        .order-form input[type=number]::-webkit-inner-spin-button, .order-form input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } .order-form input[type=number] { -moz-appearance: textfield; }
+        .order-form .radio-group { margin-bottom: 15px; } .order-form .radio-group label { display: inline-block; margin-right: 15px; } .order-form input[type="radio"] { margin-right: 5px; accent-color: #98c379; }
+        .order-form button { display: block; width: 100%; padding: 12px; background-color: #98c379; color: #282c34; border: none; border-radius: 4px; font-size: 1.1em; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: background-color 0.3s ease; } .order-form button:hover { background-color: #b3e6a4; }
+        .order-form .total-cost { margin-top: 10px; font-size: 0.9em; color: #abb2bf; }
+        /* Status Messages */
+        #status-message, #futures-status-message, #options-status-message { margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; min-height: 1.5em; } /* Added min-height */
+        #status-message.success, #futures-status-message.success, #options-status-message.success { background-color: #2a4a2a; color: #98c379; }
+        #status-message.error, #futures-status-message.error, #options-status-message.error { background-color: #5a2a2a; color: #e06c75; }
+        /* Placeholder & Derivatives Display */
+        .placeholder-content { text-align: center; color: #abb2bf; padding: 20px; font-style: italic; font-size: 0.9em; margin-bottom: 20px; background-color:#3a3f4b; border-radius: 4px; }
+        .derivatives-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; } /* Two columns for derivatives */
+        .derivatives-display-list { list-style: none; font-size: 0.85em; max-height: 400px; overflow-y: auto; padding-right: 10px; /* Space for scrollbar */}
+        .derivatives-display-list::-webkit-scrollbar { width: 8px; } .derivatives-display-list::-webkit-scrollbar-track { background: #444; border-radius: 4px;} .derivatives-display-list::-webkit-scrollbar-thumb { background: #777; border-radius: 4px;} .derivatives-display-list::-webkit-scrollbar-thumb:hover { background: #999; }
+        .derivatives-display-list li { background-color: #444; margin-bottom: 10px; padding: 10px; border-radius: 4px; border-left: 4px solid; }
+        .derivatives-display-list li.buy { border-left-color: #98c379; } /* Green for buy side */
+        .derivatives-display-list li.sell { border-left-color: #e06c75; } /* Red for sell side */
+        .derivatives-display-list p { margin-bottom: 3px; }
+        .derivatives-display-list .contract-name { font-weight: bold; color: #ffffff; }
+        .derivatives-display-list .details span { color: #abb2bf; } /* Label color */
+        .derivatives-display-list .details strong { color: #ffffff; } /* Value color */
+         /* Wallet Balances REMOVED */
+    </style>
 </head>
 <body>
-    <button onclick="location.href='marketplace.html'">Marketplace</button>
+    <header>
+        <a href="#" class="logo">EcoPrint</a>
+        <nav>
+            <a href="#">Dashboard</a>
+            <a href="#" class="active">Marketplace</a>
+            <a href="#">Impact</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main>
+            <h1>Marketplace</h1>
+
+            <!-- Wallet Selection & Balances REMOVED -->
+
+            <!-- Tabs -->
+            <div class="tab-container">
+                <button class="tab-button active" onclick="openTab(event, 'buy-sell')">Spot (Buy/Sell)</button>
+                <button class="tab-button" onclick="openTab(event, 'futures')">Futures</button>
+                <button class="tab-button" onclick="openTab(event, 'options')">Options</button>
+            </div>
+
+            <!-- Tab Content: Buy/Sell (Spot Market) -->
+            <div id="buy-sell" class="tab-content active">
+                 <h2>Spot Market: CARBON-USD</h2>
+                <div class="marketplace-layout">
+                    <!-- Order Form Column -->
+                    <div class="order-form-column">
+                        <h3>Place Spot Order</h3>
+                        <form id="order-form">
+                             <!-- Wallet Address Display & Input REMOVED -->
+
+                             <!-- Order Type -->
+                             <div class="radio-group">
+                                 <label><input type="radio" name="order_type" value="buy" required checked> Buy CARBON</label>
+                                 <label><input type="radio" name="order_type" value="sell" required> Sell CARBON</label>
+                             </div>
+
+                             <!-- Price and Amount -->
+                             <label for="price">Price (USD per CARBON):</label>
+                             <input type="number" id="price" name="price" step="0.01" min="0.01" required placeholder="e.g., 10.50">
+                             <label for="amount">Amount (CARBON):</label>
+                             <input type="number" id="amount" name="amount" step="0.01" min="0.01" required placeholder="e.g., 5.0">
+
+                             <!-- Total Display -->
+                             <div class="total-cost">Total: <span id="order-total">0.00</span> USD</div>
+
+                             <!-- Submit Button -->
+                             <button type="submit">Place Order</button> <!-- Changed button text -->
+                        </form>
+                         <div id="status-message"></div> <!-- Status message area -->
+                    </div>
+
+                    <!-- Order Book Columns -->
+                    <div class="order-book-column">
+                        <h3>Buy Orders (Bids)</h3>
+                        <ul id="buy-order-book" class="order-book-list buy">
+                             <li>...</li> <!-- Changed placeholder text -->
+                        </ul>
+                    </div>
+                    <div class="order-book-column">
+                        <h3>Sell Orders (Asks)</h3>
+                        <ul id="sell-order-book" class="order-book-list sell">
+                             <li>...</li> <!-- Changed placeholder text -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Futures -->
+            <div id="futures" class="tab-content">
+                <h2>Futures Trading (CARBON-USD)</h2>
+                <div class="derivatives-layout">
+                     <div class="derivatives-display-column">
+                          <h3>Buy Interest (Long)</h3>
+                          <ul id="futures-buy-display" class="derivatives-display-list">
+                               <li>Generating...</li>
+                          </ul>
+                     </div>
+                     <div class="derivatives-display-column">
+                          <h3>Sell Interest (Short)</h3>
+                          <ul id="futures-sell-display" class="derivatives-display-list">
+                               <li>Generating...</li>
+                          </ul>
+                     </div>
+                </div>
+                 <div id="futures-status-message"></div>
+            </div>
+
+            <!-- Tab Content: Options -->
+            <div id="options" class="tab-content">
+                <h2>Options Trading (CARBON-USD)</h2>
+                <div class="derivatives-layout">
+                     <div class="derivatives-display-column">
+                          <h3>Buy Interest (Calls/Puts - Bids)</h3> <!-- Clarified -->
+                          <ul id="options-buy-display" class="derivatives-display-list">
+                               <li>Generating...</li>
+                          </ul>
+                     </div>
+                     <div class="derivatives-display-column">
+                          <h3>Sell Interest (Calls/Puts - Asks)</h3> <!-- Clarified -->
+                          <ul id="options-sell-display" class="derivatives-display-list">
+                               <li>Generating...</li>
+                          </ul>
+                     </div>
+                </div>
+                 <div id="options-status-message"></div>
+            </div>
+        </main>
+    </div>
+
+    <footer></footer>
+
+    <script>
+        // --- JS Variables ---
+        const API_BASE_URL = 'http://127.0.0.1:5050'; // Kept for potential future use, but calls disabled
+        const SIMULATION_INTERVAL = 1500; // Milliseconds (1.5 seconds) - Faster updates for simulation
+        const USER_ORDER_TIMEOUT = 5000; // Milliseconds (5 seconds) for user order visibility
+        const FAKE_ORDER_BOOK_SIZE = 15; // Max orders per side in simulation
+
+        // Element Getters (Spot Market)
+        // Wallet elements removed
+        const buyOrderBookUl = document.getElementById('buy-order-book');
+        const sellOrderBookUl = document.getElementById('sell-order-book');
+        const orderForm = document.getElementById('order-form');
+        const priceInput = document.getElementById('price');
+        const amountInput = document.getElementById('amount');
+        const orderTotalSpan = document.getElementById('order-total');
+        const statusMessageDiv = document.getElementById('status-message');
+
+        // Derivatives Placeholders List Elements Getters
+        const futuresBuyUl = document.getElementById('futures-buy-display');
+        const futuresSellUl = document.getElementById('futures-sell-display');
+        const optionsBuyUl = document.getElementById('options-buy-display');
+        const optionsSellUl = document.getElementById('options-sell-display');
+
+        // Simulation State
+        let fakeBuyOrders = [];
+        let fakeSellOrders = [];
+        let simulationIntervalId = null;
+        let basePrice = 12.50; // Starting price for simulation
+
+        // --- Tab Management ---
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // --- Simulation Functions ---
+        function simulateOrderBookChanges() {
+            // Adjust base price slightly and randomly
+            basePrice *= (1 + (Math.random() - 0.5) * 0.008); // Smaller, more frequent adjustments
+            basePrice = Math.max(1.0, basePrice); // Prevent negative/zero price
+
+            // Add a new order (higher chance)
+            if (Math.random() < 0.7) {
+                const isBuy = Math.random() < 0.5;
+                // Buys cluster slightly below base, sells slightly above
+                const priceFluctuation = (Math.random() - (isBuy ? 0.6 : 0.4)) * basePrice * 0.05; // Percentage fluctuation
+                const price = Math.max(0.01, basePrice + priceFluctuation);
+                const amount = (Math.random() * 15 + 0.5); // Random amount
+                const newOrder = {
+                    price: parseFloat(price.toFixed(2)), // Ensure number type
+                    amount: parseFloat(amount.toFixed(4)),
+                    id: `fake_${Date.now()}_${Math.random().toString(16).slice(2)}` // Unique enough fake ID
+                };
+
+                if (isBuy) {
+                    fakeBuyOrders.push(newOrder);
+                } else {
+                    fakeSellOrders.push(newOrder);
+                }
+            }
+
+            // Remove an old order (lower chance)
+            if (Math.random() < 0.4 && (fakeBuyOrders.length + fakeSellOrders.length > 5)) {
+                 const isBuy = Math.random() < 0.5;
+                 if (isBuy && fakeBuyOrders.length > 0) {
+                     // Remove random element
+                     fakeBuyOrders.splice(Math.floor(Math.random() * fakeBuyOrders.length), 1);
+                 } else if (!isBuy && fakeSellOrders.length > 0) {
+                     // Remove random element
+                     fakeSellOrders.splice(Math.floor(Math.random() * fakeSellOrders.length), 1);
+                 }
+            }
+
+             // Sort and Trim
+             fakeBuyOrders.sort((a, b) => b.price - a.price); // Buys descending price
+             fakeSellOrders.sort((a, b) => a.price - b.price); // Sells ascending price
+             fakeBuyOrders.splice(FAKE_ORDER_BOOK_SIZE); // Keep only top N buys
+             fakeSellOrders.splice(FAKE_ORDER_BOOK_SIZE); // Keep only top N sells
+
+
+            // Update UI
+            updateOrderBookUI(fakeBuyOrders, fakeSellOrders);
+        }
+
+
+        // --- UI Update Functions ---
+         function updateOrderBookUI(buyOrders, sellOrders) {
+             const renderList = (ulElement, orders, isBuyList) => {
+                 ulElement.innerHTML = ''; // Clear previous
+                 if (!orders || orders.length === 0) {
+                     ulElement.innerHTML = `<li>No ${isBuyList ? 'buy' : 'sell'} orders</li>`;
+                     return;
+                 }
+                 // Already sorted and trimmed
+                 orders.forEach(order => {
+                     const li = document.createElement('li');
+                     // Check if it's a user order (added temporarily)
+                     if (order.isUserOrder) {
+                         li.classList.add('user-order'); // Add class for styling
+                     }
+                     li.innerHTML = `
+                         <span class="price">${order.price.toFixed(2)}</span>
+                         <span class="amount">${order.amount.toFixed(4)}</span>
+                     `;
+                     ulElement.appendChild(li);
+                 });
+             };
+             renderList(buyOrderBookUl, buyOrders, true);
+             renderList(sellOrderBookUl, sellOrders, false);
+         }
+
+         function showStatusMessage(message, isError = false, elementId = 'status-message') {
+             const statusDiv = document.getElementById(elementId);
+             if(!statusDiv) { console.warn(`Status element '${elementId}' not found.`); return; }
+             statusDiv.textContent = message;
+             statusDiv.className = isError ? 'error' : 'success';
+             setTimeout(() => {
+                  if(statusDiv.textContent === message) {
+                       statusDiv.textContent = '';
+                       statusDiv.className = '';
+                  }
+             }, isError ? 6000 : 4000); // Show errors slightly longer
+        }
+
+        function calculateTotal() {
+             const price = parseFloat(priceInput.value) || 0;
+             const amount = parseFloat(amountInput.value) || 0;
+             const total = price * amount;
+             orderTotalSpan.textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // --- Placeholder Generation Functions (Unchanged from previous version) ---
+        function generatePlaceholderFutures() {
+             const contracts = ['CARBON-USD-2412', 'CARBON-USD-2503', 'CARBON-USD-2506', 'CARBON-USD-2509'];
+             const buys = []; const sells = [];
+             let spotEstimate = basePrice; // Use the simulated base price
+
+             for (let i = 0; i < 8; i++) {
+                 const contract = contracts[Math.floor(Math.random() * contracts.length)];
+                 const qty = Math.floor(Math.random() * 50) + 1;
+                 const buyPrice = spotEstimate * (1 + (Math.random() - 0.2) * 0.08);
+                 const sellPrice = spotEstimate * (1 + (Math.random() + 0.1) * 0.10);
+                 buys.push({ contract, qty, price: buyPrice.toFixed(2), side: 'buy' });
+                 sells.push({ contract, qty: qty + Math.floor(Math.random() * 10 - 3), price: sellPrice.toFixed(2), side: 'sell' });
+             }
+             buys.sort((a, b) => b.price - a.price || contracts.indexOf(a.contract) - contracts.indexOf(b.contract));
+             sells.sort((a, b) => a.price - b.price || contracts.indexOf(a.contract) - contracts.indexOf(b.contract));
+
+             futuresBuyUl.innerHTML = buys.map(o => `<li class="buy"><p class="contract-name">${o.contract} - LONG</p><p class="details"><span>Qty:</span> <strong>${o.qty}</strong> | <span>Price:</span> <strong>${o.price}</strong></p></li>`).join('');
+             futuresSellUl.innerHTML = sells.map(o => `<li class="sell"><p class="contract-name">${o.contract} - SHORT</p><p class="details"><span>Qty:</span> <strong>${o.qty}</strong> | <span>Price:</span> <strong>${o.price}</strong></p></li>`).join('');
+        }
+
+        function generatePlaceholderOptions() {
+            const expiries = ['2025-06-20', '2025-09-19', '2025-12-19', '2026-03-20'];
+            const calls = { buys: [], sells: [] }; const puts = { buys: [], sells: [] };
+            let spotEstimate = basePrice; // Use simulated base price
+
+            for (let i = 0; i < 10; i++) {
+                 const expiry = expiries[Math.floor(Math.random() * expiries.length)];
+                 const strike = Math.round((spotEstimate * (0.8 + Math.random() * 0.4)) / 0.5) * 0.5;
+                 const qty = Math.floor(Math.random() * 20) + 1;
+                 const callIntrinsic = Math.max(0, spotEstimate - strike); const putIntrinsic = Math.max(0, strike - spotEstimate);
+                 const randomFactor = 0.1 + Math.random() * 0.4;
+                 const callPremiumBuy = Math.max(0.05, callIntrinsic + randomFactor).toFixed(2);
+                 const callPremiumSell = Math.max(0.10, callIntrinsic + randomFactor * 1.5).toFixed(2);
+                 const putPremiumBuy = Math.max(0.05, putIntrinsic + randomFactor).toFixed(2);
+                 const putPremiumSell = Math.max(0.10, putIntrinsic + randomFactor * 1.5).toFixed(2);
+                 calls.buys.push({ expiry, strike: strike.toFixed(2), qty, premium: callPremiumBuy, type: 'Call', side: 'buy' });
+                 calls.sells.push({ expiry, strike: strike.toFixed(2), qty: qty + Math.floor(Math.random() * 5), premium: callPremiumSell, type: 'Call', side: 'sell' });
+                 puts.buys.push({ expiry, strike: strike.toFixed(2), qty, premium: putPremiumBuy, type: 'Put', side: 'buy' });
+                 puts.sells.push({ expiry, strike: strike.toFixed(2), qty: qty + Math.floor(Math.random() * 5), premium: putPremiumSell, type: 'Put', side: 'sell' });
+             }
+             const buyInterest = [...calls.buys, ...puts.buys].sort((a,b) => b.strike - a.strike || b.premium - a.premium);
+             const sellInterest = [...calls.sells, ...puts.sells].sort((a,b) => a.strike - b.strike || a.premium - b.premium);
+
+             optionsBuyUl.innerHTML = buyInterest.slice(0, 15).map(o => `<li class="buy"><p class="contract-name">${o.expiry} ${o.strike} ${o.type} - BID</p><p class="details"><span>Qty:</span> <strong>${o.qty}</strong> | <span>Premium:</span> <strong>${o.premium}</strong></p></li>`).join('');
+             optionsSellUl.innerHTML = sellInterest.slice(0, 15).map(o => `<li class="sell"><p class="contract-name">${o.expiry} ${o.strike} ${o.type} - ASK</p><p class="details"><span>Qty:</span> <strong>${o.qty}</strong> | <span>Premium:</span> <strong>${o.premium}</strong></p></li>`).join('');
+        }
+
+
+        // --- Event Listeners ---
+        // Wallet select listener REMOVED
+
+        orderForm.addEventListener('submit', (event) => { // Changed from async as no await needed now
+             event.preventDefault();
+             showStatusMessage('Placing order...', false);
+
+             const formData = new FormData(orderForm);
+             // No wallet address needed from form anymore
+             const orderData = {
+                  // wallet_address: null, // Not needed for simulation
+                  type: formData.get('order_type'),
+                  amount: parseFloat(formData.get('amount')),
+                  price: parseFloat(formData.get('price')),
+                  market_pair: "CARBON-USD" // Still relevant for type
+             };
+
+             // Basic client-side validation
+             if (isNaN(orderData.amount) || orderData.amount <= 0) { showStatusMessage('Invalid order amount.', true); return; }
+             if (isNaN(orderData.price) || orderData.price <= 0) { showStatusMessage('Invalid order price.', true); return; }
+
+             console.log("Order Placement:", orderData);
+
+             // --- Simulate Placement ---
+             const userOrderId = `user_${Date.now()}`; // Unique ID for this temporary order
+             const userOrder = {
+                  price: orderData.price,
+                  amount: orderData.amount,
+                  id: userOrderId,
+                  isUserOrder: true // Flag to potentially style it differently
+             };
+
+             if (orderData.type === 'buy') {
+                 fakeBuyOrders.unshift(userOrder); // Add to top for immediate visibility
+                 fakeBuyOrders.sort((a, b) => b.price - a.price); // Re-sort
+                 fakeBuyOrders.splice(FAKE_ORDER_BOOK_SIZE); // Ensure size limit
+             } else {
+                 fakeSellOrders.unshift(userOrder); // Add to top
+                 fakeSellOrders.sort((a, b) => a.price - b.price); // Re-sort
+                 fakeSellOrders.splice(FAKE_ORDER_BOOK_SIZE); // Ensure size limit
+             }
+
+             updateOrderBookUI(fakeBuyOrders, fakeSellOrders); // Update UI immediately
+             showStatusMessage(`order ${userOrderId.substring(5, 10)}`, false);
+             orderForm.reset(); // Clear the form
+             calculateTotal(); // Reset the total display
+
+             // --- Simulate Removal After Delay ---
+             setTimeout(() => {
+                 console.log(`Removing user order ${userOrderId}`);
+                 let removed = false;
+                 if (orderData.type === 'buy') {
+                     const initialLength = fakeBuyOrders.length;
+                     fakeBuyOrders = fakeBuyOrders.filter(o => o.id !== userOrderId);
+                     removed = fakeBuyOrders.length < initialLength;
+                 } else {
+                      const initialLength = fakeSellOrders.length;
+                     fakeSellOrders = fakeSellOrders.filter(o => o.id !== userOrderId);
+                     removed = fakeSellOrders.length < initialLength;
+                 }
+
+                 if(removed) {
+                    updateOrderBookUI(fakeBuyOrders, fakeSellOrders); // Update UI again
+                    // Optional: show removal message, could be noisy
+                    // showStatusMessage(`Simulated order ${userOrderId.substring(5, 10)} removed.`, false);
+                    console.log(`User order ${userOrderId} removed.`);
+                 } else {
+                    console.log(`User order ${userOrderId} already gone (or never added properly?).`);
+                 }
+             }, USER_ORDER_TIMEOUT); // Remove after specified timeout
+             // --- End Simulation ---
+        });
+
+        // Update total cost on input change
+        priceInput.addEventListener('input', calculateTotal);
+        amountInput.addEventListener('input', calculateTotal);
+
+        // --- Initial Load and Polling ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wallet fetching removed
+
+            // Initial simulation state
+            simulateOrderBookChanges(); // Run once immediately to populate
+            simulationIntervalId = setInterval(simulateOrderBookChanges, SIMULATION_INTERVAL); // Start simulation loop
+
+            // Generate static placeholders ONCE
+             setTimeout(() => {
+                 generatePlaceholderFutures();
+                 generatePlaceholderOptions();
+             }, 200); // Short delay to allow basePrice to settle slightly
+
+            // Activate the default tab
+            const defaultActiveTab = document.querySelector('.tab-button.active');
+             if (defaultActiveTab) {
+                const defaultTabName = defaultActiveTab.getAttribute('onclick').match(/'([^']+)'/)[1];
+                 document.getElementById(defaultTabName).style.display = "block";
+             } else {
+                 document.getElementById('buy-sell').style.display = "block";
+                 const firstTabButton = document.querySelector('.tab-button');
+                 if (firstTabButton) firstTabButton.classList.add('active');
+             }
+             showStatusMessage('Marketplace started. CORS bypassed.', false);
+        });
+
+        // Clean up interval on page unload
+        window.addEventListener('beforeunload', () => {
+             if (simulationIntervalId) clearInterval(simulationIntervalId);
+             // Balance interval removed
+        });
+
+    </script>
+
 </body>
 </html>
