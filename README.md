@@ -6,6 +6,8 @@
 
 
 
+# What is EcoPrint 
+A blockchain-powered marketplace where businesses can trade verified carbon credits transparently, leveraging IPFS and real-time climate insights to ensure trust and impact!
 
 # Future Recommendations
 There are many ways this idea can be expanded upon and improved in the future!
